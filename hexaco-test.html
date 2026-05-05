@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HEXACO 性格診断</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    color: #2c3e50;
+    line-height: 1.7;
+    padding: 20px;
+  }
+  .container {
+    max-width: 800px;
+    margin: 0 auto;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+    overflow: hidden;
+  }
+  .screen { display: none; padding: 40px; }
+  .screen.active { display: block; }
+
+  /* スタート画面 */
+  #start-screen {
+    text-align: center;
+  }
+  #start-screen h1 {
+    font-size: 32px;
+    color: #667eea;
+    margin-bottom: 8px;
+    letter-spacing: 0.05em;
+  }
+  #start-screen .subtitle {
+    color: #718096;
+    margin-bottom: 32px;
+    font-size: 14px;
+  }
+  #start-screen .desc {
+    background: #f7fafc;
+    padding: 24px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    text-align: left;
+    font-size: 15px;
+    color: #4a5568;
+  }
+  #start-screen .desc h3 {
+    color: #2d3748;
+    margin-bottom: 12px;
+    font-size: 17px;
+  }
+  #start-screen .factor-list {
+    text-align: left;
+    margin-bottom: 32px;
+    background: #fffaf0;
+    padding: 20px;
+    border-radius: 12px;
+    border-left: 4px solid #f6ad55;
+  }
+  #start-screen .factor-list h3 {
+    color: #c05621;
+    margin-bottom: 12px;
+    font-size: 16px;
+  }
+  #start-screen .factor-list ul {
+    list-style: none;
+    font-size: 14px;
+  }
+  #start-screen .factor-list li {
+    padding: 4px 0;
+    color: #5d4037;
+  }
+  .btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 14px 40px;
+    font-size: 16px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    font-family: inherit;
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(102,126,234,0.4); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .btn-secondary {
+    background: #edf2f7;
+    color: #4a5568;
+  }
+  .btn-secondary:hover {
+    background: #e2e8f0;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+  }
+
+  /* 質問画面 */
+  .progress-bar {
+    background: #edf2f7;
+    height: 8px;
+    border-radius: 999px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+  .progress-fill {
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    height: 100%;
+    width: 0%;
+    transition: width 0.3s ease;
+  }
+  .progress-text {
+    text-align: right;
+    font-size: 13px;
+    color: #718096;
+    margin-bottom: 32px;
+  }
+  .question-text {
+    font-size: 20px;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 32px;
+    min-height: 80px;
+    display: flex;
+    align-items: center;
+    line-height: 1.6;
+  }
+  .options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 32px; }
+  .option {
+    padding: 16px 20px;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: white;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 15px;
+  }
+  .option:hover {
+    border-color: #667eea;
+    background: #f7faff;
+    transform: translateX(4px);
+  }
+  .option.selected {
+    border-color: #667eea;
+    background: #ebf4ff;
+    color: #4c51bf;
+    font-weight: 600;
+  }
+  .option .num {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #edf2f7;
+    color: #4a5568;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .option.selected .num {
+    background: #667eea;
+    color: white;
+  }
+  .nav-buttons {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  /* 結果画面 */
+  #result-screen h2 {
+    font-size: 28px;
+    color: #667eea;
+    text-align: center;
+    margin-bottom: 8px;
+  }
+  #result-screen .result-subtitle {
+    text-align: center;
+    color: #718096;
+    margin-bottom: 32px;
+    font-size: 14px;
+  }
+  .chart-container {
+    background: #f7fafc;
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 32px;
+    height: 380px;
+    position: relative;
+  }
+  .factor-result {
+    background: #ffffff;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .factor-result.high { border-left: 6px solid #48bb78; }
+  .factor-result.mid { border-left: 6px solid #4299e1; }
+  .factor-result.low { border-left: 6px solid #ed8936; }
+  .factor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .factor-name {
+    font-size: 18px;
+    font-weight: 700;
+    color: #2d3748;
+  }
+  .factor-name .symbol {
+    display: inline-block;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #667eea;
+    color: white;
+    text-align: center;
+    line-height: 28px;
+    margin-right: 8px;
+    font-size: 14px;
+  }
+  .factor-score {
+    font-size: 18px;
+    font-weight: 700;
+    color: #667eea;
+  }
+  .level-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-left: 8px;
+  }
+  .level-high { background: #c6f6d5; color: #22543d; }
+  .level-mid { background: #bee3f8; color: #2a4365; }
+  .level-low { background: #feebc8; color: #7b341e; }
+  .factor-desc {
+    color: #4a5568;
+    font-size: 14px;
+    margin-top: 8px;
+  }
+  .factor-careers {
+    margin-top: 14px;
+    padding: 12px 14px;
+    background: #f7fafc;
+    border-radius: 10px;
+    font-size: 13px;
+    line-height: 1.7;
+    color: #2d3748;
+  }
+  .careers-label {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    background: #4a5568;
+    padding: 2px 10px;
+    border-radius: 999px;
+    margin-right: 8px;
+    letter-spacing: 0.05em;
+    vertical-align: middle;
+  }
+  .careers-text {
+    color: #2d3748;
+  }
+  .career-summary {
+    background: linear-gradient(135deg, #fff8f0 0%, #fef5e7 100%);
+    border: 2px solid #f6ad55;
+    border-radius: 14px;
+    padding: 22px 24px;
+    margin-bottom: 24px;
+  }
+  .career-summary h3 {
+    color: #c05621;
+    font-size: 17px;
+    margin-bottom: 12px;
+  }
+  .career-summary p {
+    color: #4a5568;
+    font-size: 14px;
+    line-height: 1.8;
+    margin-bottom: 8px;
+  }
+  .career-summary p:last-child {
+    margin-bottom: 0;
+    font-size: 12px;
+    color: #718096;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed #f6ad55;
+  }
+  .career-summary b {
+    color: #c05621;
+    font-weight: 700;
+  }
+  .score-bar {
+    background: #edf2f7;
+    height: 10px;
+    border-radius: 999px;
+    overflow: hidden;
+    margin: 10px 0;
+  }
+  .score-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.6s ease;
+  }
+  .restart-area {
+    text-align: center;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid #e2e8f0;
+  }
+
+  @media (max-width: 600px) {
+    .screen { padding: 24px; }
+    #start-screen h1 { font-size: 26px; }
+    .question-text { font-size: 17px; }
+    .chart-container { height: 320px; padding: 10px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- スタート画面 -->
+  <div id="start-screen" class="screen active">
+    <h1>HEXACO 性格診断</h1>
+    <p class="subtitle">6因子モデルで、あなたの性格を見つけよう</p>
+
+    <div class="desc">
+      <h3>HEXACOモデルとは</h3>
+      <p>HEXACO（ヘキサコ）は、近年の性格心理学で広く使われる6因子モデルです。Big Fiveをさらに発展させ、「正直・謙虚性」を独立した因子として加えた、より精度の高いパーソナリティ理論です。</p>
+    </div>
+
+    <div class="factor-list">
+      <h3>診断する6つの因子</h3>
+      <ul>
+        <li><strong>H</strong>　正直・謙虚性 (Honesty-Humility)</li>
+        <li><strong>E</strong>　情動性 (Emotionality)</li>
+        <li><strong>X</strong>　外向性 (eXtraversion)</li>
+        <li><strong>A</strong>　協調性 (Agreeableness)</li>
+        <li><strong>C</strong>　誠実性 (Conscientiousness)</li>
+        <li><strong>O</strong>　経験への開放性 (Openness)</li>
+      </ul>
+    </div>
+
+    <p style="margin-bottom: 20px; color: #718096; font-size: 14px;">
+      全24問・所要時間 約5分<br>
+      直感的に、ふだんの自分に近いほうを選んでください
+    </p>
+
+    <button class="btn" onclick="startTest()">診断をはじめる</button>
+  </div>
+
+  <!-- 質問画面 -->
+  <div id="question-screen" class="screen">
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+    <div class="progress-text" id="progress-text">1 / 24</div>
+    <div class="question-text" id="question-text"></div>
+    <div class="options" id="options"></div>
+    <div class="nav-buttons">
+      <button class="btn btn-secondary" id="prev-btn" onclick="prevQuestion()">← 前へ</button>
+      <button class="btn" id="next-btn" onclick="nextQuestion()" disabled>次へ →</button>
+    </div>
+  </div>
+
+  <!-- 結果画面 -->
+  <div id="result-screen" class="screen">
+    <h2>あなたの診断結果</h2>
+    <p class="result-subtitle">HEXACO 6因子のプロフィール</p>
+    <div class="chart-container">
+      <canvas id="radar-chart"></canvas>
+    </div>
+    <div id="result-details"></div>
+    <div class="restart-area">
+      <button class="btn btn-secondary" onclick="restart()">もう一度やる</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ========== 質問データ ==========
+// factor: H/E/X/A/C/O,  reverse: true なら逆転項目
+const QUESTIONS = [
+  // H: 正直・謙虚性
+  { text: "大きな見返りがあっても、不正な手段は使いたくない", factor: "H", reverse: false },
+  { text: "自分の得のために、他人をうまく利用することがある", factor: "H", reverse: true },
+  { text: "高価なブランド品で自分を飾りたいとは思わない", factor: "H", reverse: false },
+  { text: "自分は他の人より特別な存在だと感じる", factor: "H", reverse: true },
+
+  // E: 情動性
+  { text: "怖いと感じる場面では、強く不安になりやすい", factor: "E", reverse: false },
+  { text: "危険な状況でも、あまり恐怖を感じないほうだ", factor: "E", reverse: true },
+  { text: "困ったときは、誰かに頼って安心したくなる", factor: "E", reverse: false },
+  { text: "一人でいても不安を感じにくい", factor: "E", reverse: true },
+
+  // X: 外向性
+  { text: "人前で話すのは得意なほうだ", factor: "X", reverse: false },
+  { text: "大勢の集まりより、一人で過ごす時間が好きだ", factor: "X", reverse: true },
+  { text: "自分は活発でエネルギッシュな人間だと思う", factor: "X", reverse: false },
+  { text: "知らない人と会うのは気が進まない", factor: "X", reverse: true },
+
+  // A: 協調性
+  { text: "多少のことは大目に見て、人を許すことができる", factor: "A", reverse: false },
+  { text: "一度こじれた相手とは、なかなか仲直りできない", factor: "A", reverse: true },
+  { text: "他人の意見にも柔軟に耳を傾けるほうだ", factor: "A", reverse: false },
+  { text: "自分の考えはあまり譲りたくない", factor: "A", reverse: true },
+
+  // C: 誠実性
+  { text: "物事を計画的に進めるのが得意だ", factor: "C", reverse: false },
+  { text: "部屋や持ち物が散らかっていてもあまり気にならない", factor: "C", reverse: true },
+  { text: "細かい点まで丁寧に確認するほうだ", factor: "C", reverse: false },
+  { text: "締め切りギリギリになって慌てることが多い", factor: "C", reverse: true },
+
+  // O: 経験への開放性
+  { text: "美術や音楽など、芸術的なものに心を動かされる", factor: "O", reverse: false },
+  { text: "抽象的な議論や哲学的な話題にはあまり興味がない", factor: "O", reverse: true },
+  { text: "新しい知識や考え方を学ぶのが好きだ", factor: "O", reverse: false },
+  { text: "慣れ親しんだやり方を変えたくないほうだ", factor: "O", reverse: true }
+];
+
+const OPTIONS = [
+  { value: 1, label: "まったく当てはまらない" },
+  { value: 2, label: "あまり当てはまらない" },
+  { value: 3, label: "どちらともいえない" },
+  { value: 4, label: "やや当てはまる" },
+  { value: 5, label: "とても当てはまる" }
+];
+
+// 因子情報
+const FACTORS = {
+  H: {
+    name: "正直・謙虚性",
+    en: "Honesty-Humility",
+    color: "#e53e3e",
+    high: "誠実で謙虚、見栄や駆け引きを好まないタイプです。公正さを重んじ、地位や富にもあまり執着しません。信頼関係を大切に築ける一方で、ずる賢さが必要な場面では損をしやすい面もあります。",
+    mid: "状況に応じて自分の利益と他者への配慮をバランスよく取れるタイプです。原則は守りつつ、必要なら主張や交渉もできる柔軟さがあります。",
+    low: "自分の利益や立場を大切にし、目的のために戦略的にふるまえるタイプです。野心的でリーダーシップを発揮しやすい一方、誠実さや謙虚さを意識すると人間関係がより安定します。",
+    careersHigh: "監査・コンプライアンス、税理士、公務員、教師、研究者、医療・福祉、NPO・社会起業など、誠実さと公正さが信頼の土台になる仕事",
+    careersMid: "一般企業の総合職、プロジェクトマネージャー、サービス業など、状況対応力が活きる幅広い仕事",
+    careersLow: "営業・トレーダー、起業家、エージェント、政治家・ロビイスト、エンタメ業界など、駆け引きや競争を楽しめる仕事"
+  },
+  E: {
+    name: "情動性",
+    en: "Emotionality",
+    color: "#dd6b20",
+    high: "感受性が豊かで、不安や心配を敏感に察知できるタイプです。共感力が高く、人とのつながりを深く感じられますが、心配ごとを抱え込みやすいため、自分なりの安心の作り方を持っておくと楽になります。",
+    mid: "感情に振り回されすぎず、必要なときに必要なだけ感じ取れるバランス型です。安定感があり、周囲からも頼りにされやすいタイプです。",
+    low: "プレッシャーや危険に対して動じにくく、冷静沈着なタイプです。挑戦やリスクのある状況にも踏み出しやすい一方、周囲の感情変化には少し意識を向けるとより人と通じ合えます。",
+    careersHigh: "看護師・介護士、保育士、カウンセラー、心理職、福祉、芸術・表現職、編集者など、共感力と繊細な感性を活かす仕事",
+    careersMid: "教育、人事、ヘルスケア、企画職など、感情と論理のバランスが必要な仕事",
+    careersLow: "救急医療・外科医、警察・消防・自衛官、パイロット、トレーダー、起業家、アスリートなど、強いプレッシャー下でも判断できる仕事"
+  },
+  X: {
+    name: "外向性",
+    en: "eXtraversion",
+    color: "#d69e2e",
+    high: "活発で社交的、人と関わることでエネルギーを得られるタイプです。前向きな雰囲気を周囲に広げる力があり、リーダー役や場のムードメーカーになりやすい性格です。",
+    mid: "状況に応じて社交的にも内省的にもなれる、バランスのとれたタイプです。一人時間も人付き合いも、どちらもほどよく楽しめます。",
+    low: "落ち着いた環境を好み、深く考えたり一人で過ごす時間を大切にするタイプです。表に出るのは得意でなくとも、じっくり物事に向き合う集中力と思慮深さが強みです。",
+    careersHigh: "営業、広報・PR、教師、接客・サービス、イベント企画、芸能・タレント、人事、経営・リーダー職など、人と関わることが成果に直結する仕事",
+    careersMid: "コンサルタント、企画・マーケ、チームリーダー、ヘルスケアなど、対人とデスクワークの両方がある仕事",
+    careersLow: "研究者、エンジニア・プログラマ、ライター・編集、デザイナー、職人、会計・分析職など、一人で集中して深く取り組む仕事"
+  },
+  A: {
+    name: "協調性",
+    en: "Agreeableness",
+    color: "#38a169",
+    high: "穏やかで寛容、対立を避け、人を許せるタイプです。協力的な人間関係を築くのが得意ですが、譲りすぎて自分の意見を伝えにくくなることもあるため、適度な主張も意識しましょう。",
+    mid: "協調と主張のバランスが取れたタイプです。譲るべきところは譲り、必要なら自分の意見もきちんと伝えられます。",
+    low: "自分の意見をしっかり持ち、納得できないことには議論を恐れないタイプです。批判精神があり物事の本質に切り込めますが、相手への伝え方を意識するとより信頼関係が深まります。",
+    careersHigh: "看護師・介護、保育、カスタマーサポート、調整役・ファシリテーター、人事、サービス業など、人と協力して場を整える仕事",
+    careersMid: "営業、企画、マネージャー、医療事務など、協力と交渉のどちらも求められる仕事",
+    careersLow: "弁護士、ジャーナリスト、批評家・評論、品質管理・監査、コンサルタント、研究者など、ぶれない判断と批判的思考が活きる仕事"
+  },
+  C: {
+    name: "誠実性",
+    en: "Conscientiousness",
+    color: "#3182ce",
+    high: "計画的で几帳面、責任感が強くやり遂げる力に優れたタイプです。細部まで配慮できる一方で、自分や周囲に厳しくなりすぎないよう、ときにはゆとりも大切にしてみましょう。",
+    mid: "場面に応じて計画的にも柔軟にもふるまえるタイプです。準備と臨機応変のバランスがよく、安定して成果を出せます。",
+    low: "自由でのびのびとしており、堅苦しい計画よりもその場の流れを大切にするタイプです。創造的に動ける一方、重要な場面では締め切りや手順を意識すると評価が一段と高まります。",
+    careersHigh: "会計士・税理士、医師、薬剤師、法律職、品質管理、エンジニア、研究者、プロジェクト管理など、正確さと粘り強さが求められる仕事",
+    careersMid: "総合職、企画、マーケ、教育、ヘルスケアなど、計画と適応の両方が必要な仕事",
+    careersLow: "クリエイター、芸術家、フリーランス、起業家、アイデア職、エンタメなど、自由度と発想力が武器になる仕事"
+  },
+  O: {
+    name: "経験への開放性",
+    en: "Openness",
+    color: "#805ad5",
+    high: "好奇心が旺盛で、新しい知識や芸術、未知の体験を楽しめるタイプです。発想力や独創性に富み、変化のある環境で力を発揮します。アイデアを形にする習慣を持つと強みがさらに活きます。",
+    mid: "新しいことにも馴染みのあるものにも、ほどよく関心を向けられるタイプです。安定感と適応力を両立しています。",
+    low: "現実的で実用を重んじ、確実に機能するやり方を大切にするタイプです。地に足のついた判断ができる一方、たまには新しい刺激を取り入れると視野がさらに広がります。",
+    careersHigh: "研究者、デザイナー、作家・編集、起業家、コンサルタント、マーケター、芸術・表現職、UX・新規事業など、発想力と探究心が活きる仕事",
+    careersMid: "企画、教育、ヘルスケア、サービス業など、新しい知識と現場対応の両方が必要な仕事",
+    careersLow: "事務・経理、製造・生産管理、行政・公共サービス、伝統工芸、定型業務、インフラ運用など、確実さと安定運用が価値になる仕事"
+  }
+};
+
+// 因子の解説順
+const FACTOR_ORDER = ["H", "E", "X", "A", "C", "O"];
+
+// ========== 状態 ==========
+let currentIndex = 0;
+let answers = new Array(QUESTIONS.length).fill(null);
+let chartInstance = null;
+
+// ========== 画面遷移 ==========
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function startTest() {
+  currentIndex = 0;
+  answers = new Array(QUESTIONS.length).fill(null);
+  showScreen('question-screen');
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const q = QUESTIONS[currentIndex];
+  document.getElementById('question-text').textContent = `Q${currentIndex + 1}.  ${q.text}`;
+  document.getElementById('progress-text').textContent = `${currentIndex + 1} / ${QUESTIONS.length}`;
+  document.getElementById('progress-fill').style.width = `${((currentIndex + 1) / QUESTIONS.length) * 100}%`;
+
+  const optionsDiv = document.getElementById('options');
+  optionsDiv.innerHTML = '';
+  OPTIONS.forEach(opt => {
+    const div = document.createElement('div');
+    div.className = 'option' + (answers[currentIndex] === opt.value ? ' selected' : '');
+    div.innerHTML = `<div class="num">${opt.value}</div><div>${opt.label}</div>`;
+    div.onclick = () => {
+      answers[currentIndex] = opt.value;
+      // 選んだ瞬間に視覚フィードバックを出してから自動で次へ
+      document.querySelectorAll('#options .option').forEach(el => el.classList.remove('selected'));
+      div.classList.add('selected');
+      document.getElementById('next-btn').disabled = false;
+      setTimeout(() => {
+        if (currentIndex < QUESTIONS.length - 1) {
+          currentIndex++;
+          renderQuestion();
+        } else {
+          showResult();
+        }
+      }, 250);
+    };
+    optionsDiv.appendChild(div);
+  });
+
+  document.getElementById('prev-btn').disabled = currentIndex === 0;
+  document.getElementById('next-btn').disabled = answers[currentIndex] === null;
+  document.getElementById('next-btn').textContent =
+    currentIndex === QUESTIONS.length - 1 ? '結果を見る →' : '次へ →';
+}
+
+function prevQuestion() {
+  if (currentIndex > 0) { currentIndex--; renderQuestion(); }
+}
+
+function nextQuestion() {
+  if (answers[currentIndex] === null) return;
+  if (currentIndex < QUESTIONS.length - 1) {
+    currentIndex++;
+    renderQuestion();
+  } else {
+    showResult();
+  }
+}
+
+// ========== スコア計算 ==========
+function calculateScores() {
+  const sums = { H: 0, E: 0, X: 0, A: 0, C: 0, O: 0 };
+  const counts = { H: 0, E: 0, X: 0, A: 0, C: 0, O: 0 };
+  QUESTIONS.forEach((q, i) => {
+    let v = answers[i];
+    if (q.reverse) v = 6 - v; // 1↔5, 2↔4 を反転
+    sums[q.factor] += v;
+    counts[q.factor]++;
+  });
+  // 1〜5平均 → 0〜100スコアへ変換
+  const scores = {};
+  Object.keys(sums).forEach(k => {
+    const avg = sums[k] / counts[k];           // 1.0〜5.0
+    scores[k] = Math.round(((avg - 1) / 4) * 100); // 0〜100
+  });
+  return scores;
+}
+
+function levelOf(score) {
+  if (score >= 65) return 'high';
+  if (score >= 40) return 'mid';
+  return 'low';
+}
+
+function levelLabel(level) {
+  return { high: '高め', mid: '中ぐらい', low: '低め' }[level];
+}
+
+// ========== 結果表示 ==========
+function showResult() {
+  const scores = calculateScores();
+  showScreen('result-screen');
+  drawRadarChart(scores);
+  renderDetails(scores);
+}
+
+function drawRadarChart(scores) {
+  const ctx = document.getElementById('radar-chart').getContext('2d');
+  if (chartInstance) chartInstance.destroy();
+  chartInstance = new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels: FACTOR_ORDER.map(k => `${k}: ${FACTORS[k].name}`),
+      datasets: [{
+        label: 'あなたのスコア',
+        data: FACTOR_ORDER.map(k => scores[k]),
+        backgroundColor: 'rgba(102, 126, 234, 0.25)',
+        borderColor: 'rgba(102, 126, 234, 1)',
+        borderWidth: 2,
+        pointBackgroundColor: 'rgba(118, 75, 162, 1)',
+        pointBorderColor: '#fff',
+        pointHoverBackgroundColor: '#fff',
+        pointHoverBorderColor: 'rgba(102, 126, 234, 1)',
+        pointRadius: 5,
+        pointHoverRadius: 7
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        r: {
+          min: 0, max: 100,
+          ticks: { stepSize: 20, color: '#a0aec0', backdropColor: 'transparent', font: { size: 11 } },
+          grid: { color: '#e2e8f0' },
+          angleLines: { color: '#cbd5e0' },
+          pointLabels: { font: { size: 13, weight: '600' }, color: '#2d3748' }
+        }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: { label: (c) => ` ${c.parsed.r} 点 / 100` }
+        }
+      }
+    }
+  });
+}
+
+function careersOf(factor, level) {
+  const f = FACTORS[factor];
+  if (level === 'high') return f.careersHigh;
+  if (level === 'low')  return f.careersLow;
+  return f.careersMid;
+}
+
+function renderCareerSummary(scores) {
+  // 上位2因子を抽出して、向いている職業の方向性を提案
+  const sorted = FACTOR_ORDER
+    .map(k => ({ key: k, score: scores[k] }))
+    .sort((a, b) => b.score - a.score);
+  const top1 = sorted[0];
+  const top2 = sorted[1];
+  const bottom = sorted[sorted.length - 1];
+
+  // 上位因子の方向（高め・低めのどちらに振れているか）でメッセージを切替
+  const dir = (s) => s.score >= 60 ? 'high' : (s.score <= 40 ? 'low' : 'mid');
+
+  const lines = [];
+  lines.push(`もっとも特徴的なのは <b>${top1.key}: ${FACTORS[top1.key].name}</b>（${top1.score}点）と <b>${top2.key}: ${FACTORS[top2.key].name}</b>（${top2.score}点）です。`);
+  lines.push(`このバランスから、<b>${careersOf(top1.key, dir(top1))}</b>がフィットしやすい傾向があります。あわせて、${careersOf(top2.key, dir(top2))}でも力を発揮しやすいでしょう。`);
+  if (bottom.score <= 35) {
+    lines.push(`一方で <b>${bottom.key}: ${FACTORS[bottom.key].name}</b>（${bottom.score}点）の特性が強く求められる職場では、ストレスを感じやすい可能性があります。`);
+  }
+  lines.push(`※ 性格はあくまで適性のヒントです。実際の職業選びでは、興味・スキル・価値観・ライフスタイルもあわせて考えてみてください。`);
+
+  return `
+    <div class="career-summary">
+      <h3>あなたに向いていそうな職業の方向性</h3>
+      <p>${lines.join('</p><p>')}</p>
+    </div>
+  `;
+}
+
+function renderDetails(scores) {
+  const container = document.getElementById('result-details');
+  container.innerHTML = '';
+
+  // 総合サマリーを最初に追加
+  container.insertAdjacentHTML('beforeend', renderCareerSummary(scores));
+
+  FACTOR_ORDER.forEach(key => {
+    const f = FACTORS[key];
+    const score = scores[key];
+    const level = levelOf(score);
+    const desc = f[level];
+    const careers = careersOf(key, level);
+
+    const div = document.createElement('div');
+    div.className = `factor-result ${level}`;
+    div.innerHTML = `
+      <div class="factor-header">
+        <div class="factor-name">
+          <span class="symbol" style="background:${f.color}">${key}</span>
+          ${f.name}
+          <span class="level-badge level-${level}">${levelLabel(level)}</span>
+        </div>
+        <div class="factor-score">${score} / 100</div>
+      </div>
+      <div class="score-bar">
+        <div class="score-fill" style="width:${score}%; background:${f.color};"></div>
+      </div>
+      <div class="factor-desc">${desc}</div>
+      <div class="factor-careers">
+        <span class="careers-label">向いている仕事の例</span>
+        <span class="careers-text">${careers}</span>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+function restart() {
+  showScreen('start-screen');
+}
+</script>
+</body>
+</html>
