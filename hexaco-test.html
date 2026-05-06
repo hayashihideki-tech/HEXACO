@@ -517,6 +517,47 @@ const FACTORS = {
 // 因子の解説順
 const FACTOR_ORDER = ["H", "E", "X", "A", "C", "O"];
 
+
+const TOP2_ARCHETYPES = {
+  "H-E": {name:"良心共感型", celebs:"マザー・テレサ／オードリー・ヘプバーン／新渡戸稲造", strengths:"誠実さと共感力が高く、信頼される。弱者支援や対人支援で力を発揮。", weaknesses:"心配を抱え込みやすく、自己犠牲で疲れやすい。"},
+  "H-X": {name:"誠実リーダー型", celebs:"ネルソン・マンデラ／渋沢栄一／ジャシンダ・アーダーン", strengths:"公正さと発信力を両立し、クリーンなリーダーシップを取りやすい。", weaknesses:"理想を優先しすぎると、現実的な駆け引きで不利になる。"},
+  "H-A": {name:"調和倫理型", celebs:"ガンジー／上杉鷹山／デズモンド・ツツ", strengths:"対立を和らげながら倫理を守れるため、仲裁や調整で強い。", weaknesses:"主張が弱くなり、厳しい交渉で譲りすぎることがある。"},
+  "H-C": {name:"規範実務型", celebs:"稲盛和夫／二宮尊徳／アンゲラ・メルケル", strengths:"高い誠実性と自己管理で、安定した成果と信頼を積み上げる。", weaknesses:"融通が利かず、変化の速い環境で硬直しやすい。"},
+  "H-O": {name:"理念創造型", celebs:"アルベルト・シュバイツァー／湯川秀樹／ジェーン・グドール", strengths:"倫理観に基づく独創性があり、社会的意義のある新規提案に強い。", weaknesses:"理想先行で、実装や収益化の現実とギャップが出やすい。"},
+  "E-X": {name:"情熱発信型", celebs:"レディー・ガガ／松岡修造／オプラ・ウィンフリー", strengths:"感情表現と社交性が豊かで、人を巻き込み動機づける力が高い。", weaknesses:"気分や周囲反応に影響され、判断がぶれやすい。"},
+  "E-A": {name:"ケアサポート型", celebs:"フローレンス・ナイチンゲール／黒柳徹子／ボブ・ロス", strengths:"配慮と共感が深く、安心できる関係づくりが得意。", weaknesses:"対立回避が強く、必要なNOを言えないことがある。"},
+  "E-C": {name:"慎重管理型", celebs:"野口英世／ウォーレン・バフェット／ピーター・ドラッカー", strengths:"リスク感知と計画性で、事故予防や品質管理に強い。", weaknesses:"過度な慎重さで、機会損失や決断遅延が起こりやすい。"},
+  "E-O": {name:"感性探究型", celebs:"宮崎駿／草間彌生／フリーダ・カーロ", strengths:"感受性と想像力が高く、芸術・物語・共感設計で独自性を出せる。", weaknesses:"刺激に敏感で、ストレス環境では消耗しやすい。"},
+  "X-A": {name:"社交調整型", celebs:"明石家さんま／デール・カーネギー／有働由美子", strengths:"場づくり・関係調整・対人交渉が得意で、チームの潤滑油になれる。", weaknesses:"八方美人になりやすく、優先順位が曖昧になる。"},
+  "X-C": {name:"実行統率型", celebs:"イーロン・マスク／孫正義／織田信長", strengths:"行動力と達成志向が高く、大規模プロジェクトを前進させやすい。", weaknesses:"急ぎすぎて他者配慮が不足し、摩擦を生みやすい。"},
+  "X-O": {name:"ビジョン伝播型", celebs:"スティーブ・ジョブズ／秋元康／手塚治虫", strengths:"新しいビジョンを魅力的に伝え、賛同者を集める力が強い。", weaknesses:"新規性偏重で、運用の地道さを軽視しやすい。"},
+  "A-C": {name:"堅実協働型", celebs:"吉田松陰／羽生善治／サティア・ナデラ", strengths:"協力的かつ責任感が高く、再現性の高いチーム成果を出しやすい。", weaknesses:"衝突を避けすぎて、抜本的改革が遅れることがある。"},
+  "A-O": {name:"共創柔軟型", celebs:"ジョン・レノン／村上春樹／レイチェル・カーソン", strengths:"受容性と柔軟発想で、多様な価値観をつないだ共創が得意。", weaknesses:"方向性を絞り切れず、意思決定が遅くなりやすい。"},
+  "C-O": {name:"設計革新型", celebs:"レオナルド・ダ・ヴィンチ／マリー・キュリー／本田宗一郎", strengths:"構造化と創造性を両立し、革新的アイデアを実装まで導ける。", weaknesses:"完璧主義になりやすく、試行回数が減ることがある。"}
+};
+
+function top2Key(scores) {
+  const sorted = FACTOR_ORDER.map(k => ({ key:k, score:scores[k] })).sort((a,b)=>b.score-a.score);
+  const pair = [sorted[0].key, sorted[1].key].sort();
+  return `${pair[0]}-${pair[1]}`;
+}
+
+function renderTop2Archetype(scores) {
+  const key = top2Key(scores);
+  const a = TOP2_ARCHETYPES[key];
+  if (!a) return '';
+  return `
+    <div class="career-summary" style="border-color:#667eea;background:linear-gradient(135deg,#f7faff 0%,#eef2ff 100%);">
+      <h3 style="color:#4c51bf;">上位2因子ベース 15カテゴリ分類</h3>
+      <p><b>カテゴリ:</b> ${a.name}（${key}）</p>
+      <p><b>代表的な著名人（例）:</b> ${a.celebs}</p>
+      <p><b>強み:</b> ${a.strengths}</p>
+      <p><b>弱み・注意点:</b> ${a.weaknesses}</p>
+      <p>※ 著名人は一般に知られる人物像をもとにした参考例です。</p>
+    </div>
+  `;
+}
+
 // ========== 状態 ==========
 let currentIndex = 0;
 let answers = new Array(QUESTIONS.length).fill(null);
@@ -707,6 +748,7 @@ function renderDetails(scores) {
 
   // 総合サマリーを最初に追加
   container.insertAdjacentHTML('beforeend', renderCareerSummary(scores));
+  container.insertAdjacentHTML('beforeend', renderTop2Archetype(scores));
 
   FACTOR_ORDER.forEach(key => {
     const f = FACTORS[key];
