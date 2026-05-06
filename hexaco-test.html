@@ -366,6 +366,11 @@
     </p>
 
     <button class="btn" onclick="startTest()">診断をはじめる</button>
+    <div id="resume-area" style="display:none; margin-top: 14px;">
+      <button class="btn btn-secondary" onclick="showPreviousResult()">前回結果を表示</button>
+      <p id="resume-note" style="margin-top: 10px; color: #718096; font-size: 12px;"></p>
+    </div>
+    <p style="margin-top: 12px; color: #718096; font-size: 12px;">※「もう一度やる」で開始画面へ戻っても、前回結果は保持されます。</p>
   </div>
 
   <!-- 質問画面 -->
@@ -522,6 +527,8 @@ let currentIndex = 0;
 let answers = new Array(QUESTIONS.length).fill(null);
 let chartInstance = null;
 
+const RESULT_STORAGE_KEY = 'hexaco_result_v1';
+
 // ========== 画面遷移 ==========
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -616,8 +623,51 @@ function levelLabel(level) {
 }
 
 // ========== 結果表示 ==========
+function saveResult(scores) {
+  const payload = {
+    scores,
+    answers: [...answers],
+    timestamp: new Date().toISOString()
+  };
+  localStorage.setItem(RESULT_STORAGE_KEY, JSON.stringify(payload));
+}
+
+function loadSavedResult() {
+  const raw = localStorage.getItem(RESULT_STORAGE_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch (e) {
+    return null;
+  }
+}
+
+function updateResumeButton() {
+  const saved = loadSavedResult();
+  const area = document.getElementById('resume-area');
+  const note = document.getElementById('resume-note');
+  if (!saved || !saved.scores || !Array.isArray(saved.answers)) {
+    area.style.display = 'none';
+    return;
+  }
+  area.style.display = 'block';
+  const d = new Date(saved.timestamp);
+  note.textContent = Number.isNaN(d.getTime()) ? '' : `保存日時: ${d.toLocaleString('ja-JP')}`;
+}
+
+function showPreviousResult() {
+  const saved = loadSavedResult();
+  if (!saved || !saved.scores || !Array.isArray(saved.answers)) return;
+  answers = saved.answers;
+  showScreen('result-screen');
+  drawRadarChart(saved.scores);
+  renderDetails(saved.scores);
+}
+
 function showResult() {
   const scores = calculateScores();
+  saveResult(scores);
+  updateResumeButton();
   showScreen('result-screen');
   drawRadarChart(scores);
   renderDetails(scores);
@@ -741,7 +791,10 @@ function renderDetails(scores) {
 
 function restart() {
   showScreen('start-screen');
+  updateResumeButton();
 }
+
+updateResumeButton();
 </script>
 </body>
 </html>
